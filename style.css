@@ -230,3 +230,8 @@ html { height: auto; }
 html.sheet-open, html.sheet-open body { overflow: visible; }
 body { position: relative; height: 100vh; height: 100dvh; min-height: 0; padding: 0; touch-action: pan-y; }
 #app { position: absolute; inset: 0; overflow: hidden; }
+
+/* ===== jak w pierwszej wersji: dokument minimalnie wyższy od ekranu (iOS wtedy rozciąga stronę pod dolny wskaźnik), UI i tak się nie przesuwa ===== */
+html { background: var(--accent); }
+body { height: auto; min-height: calc(100dvh + 2px); background: var(--bg); }
+#app { position: absolute; top: 0; left: 0; right: 0; bottom: auto; height: 100dvh; }

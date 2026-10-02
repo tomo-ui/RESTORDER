@@ -1,4 +1,4 @@
-const CACHE = 'restorder-v9';
+const CACHE = 'restorder-v10';
 const SHELL = ['./', 'index.html', 'style.css', 'app.js', 'seed.js', 'manifest.webmanifest',
   'icons/logo.svg', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png',
   'icons/logos/chef.png', 'icons/logos/mille.png', 'icons/logos/del.png', 'icons/logos/frutus.png', 'icons/logos/farutex.png'];
