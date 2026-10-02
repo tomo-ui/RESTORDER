@@ -471,6 +471,13 @@ function settingsSheet() {
     const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches;
     sh.querySelector('#diag').textContent = `Ekran: ${innerWidth}×${innerHeight} (urządzenie ${screen.width}×${screen.height}) · safe-area góra/dół ${cs.paddingTop}/${cs.paddingBottom} · ${standalone ? 'aplikacja zainstalowana' : 'w przeglądarce'}`;
     probe.remove();
+    try {
+      const boot = JSON.parse(localStorage.getItem('restorder.boot') || '[]');
+      if (boot.length) {
+        sh.querySelector('#diag').textContent += '\n\nStart (ms · inner · fixed · dvh · lvh · svh · safe góra/dół · ekran):\n' +
+          boot.map(b => `${b.t} · ${b.ih} · ${b.fx} · ${b.dvh} · ${b.lvh} · ${b.svh} · ${b.st}/${b.sb} · ${b.sh}`).join('\n');
+      }
+    } catch (e) { /* brak danych */ }
     sh.querySelector('#f-ok').onclick = () => {
       S.settings.restaurant = sh.querySelector('#f-rest').value.trim() || 'Restauracja';
       S.settings.signature = sh.querySelector('#f-sig').value.trim();

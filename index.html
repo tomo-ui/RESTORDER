@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>RESTORDER</title>
 <meta name="theme-color" content="#d9531e">
+<meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -26,6 +27,40 @@
 <link rel="apple-touch-startup-image" href="icons/splash/1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 <link rel="apple-touch-startup-image" href="icons/splash/1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 <link rel="stylesheet" href="style.css">
+<script>
+/* pomiar viewportu przy starcie (do diagnostyki w Ustawieniach) */
+(function () {
+  var t0 = Date.now(), log = [], probes = {};
+  function mk(name, css) {
+    var d = document.createElement('div');
+    d.style.cssText = 'position:fixed;left:0;width:1px;visibility:hidden;pointer-events:none;' + css;
+    document.documentElement.appendChild(d); probes[name] = d;
+  }
+  try {
+    mk('fixed', 'top:0;bottom:0');
+    mk('dvh', 'top:0;height:100dvh');
+    mk('lvh', 'top:0;height:100lvh');
+    mk('svh', 'top:0;height:100svh');
+    mk('safe', 'top:0;height:1px;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)');
+  } catch (e) {}
+  function snap() {
+    try {
+      var cs = getComputedStyle(probes.safe), vv = window.visualViewport;
+      log.push({
+        t: Date.now() - t0, ih: innerHeight, sh: screen.height,
+        fx: Math.round(probes.fixed.getBoundingClientRect().height), dvh: Math.round(probes.dvh.getBoundingClientRect().height),
+        lvh: Math.round(probes.lvh.getBoundingClientRect().height), svh: Math.round(probes.svh.getBoundingClientRect().height),
+        st: cs.paddingTop, sb: cs.paddingBottom, vv: vv ? Math.round(vv.height) : null
+      });
+      localStorage.setItem('restorder.boot', JSON.stringify(log));
+    } catch (e) {}
+  }
+  snap();
+  [250, 800, 1500, 2500, 3500].forEach(function (ms) { setTimeout(snap, ms); });
+  window.addEventListener('resize', snap);
+})();
+</script>
+
 </head>
 <body>
 <div id="app"></div>
