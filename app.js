@@ -460,8 +460,17 @@ function settingsSheet() {
     </div>
     <div class="btns"><button class="btn" id="b-clearall">Wyczyść wszystkie ilości</button></div>
     <div class="btns"><button class="btn danger" id="b-reset">Przywróć dane startowe z pliku</button></div>
-    <div class="hint">Dane są zapisane tylko na tym telefonie. Robiąc kopię JSON możesz przenieść listy na inne urządzenie.</div>`,
+    <div class="hint">Dane są zapisane tylko na tym telefonie. Robiąc kopię JSON możesz przenieść listy na inne urządzenie.</div>
+    <div class="hint" id="diag"></div>`,
   sh => {
+    // diagnostyka pełnego ekranu
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;visibility:hidden;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)';
+    document.body.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    const standalone = navigator.standalone || matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches;
+    sh.querySelector('#diag').textContent = `Ekran: ${innerWidth}×${innerHeight} (urządzenie ${screen.width}×${screen.height}) · safe-area góra/dół ${cs.paddingTop}/${cs.paddingBottom} · ${standalone ? 'aplikacja zainstalowana' : 'w przeglądarce'}`;
+    probe.remove();
     sh.querySelector('#f-ok').onclick = () => {
       S.settings.restaurant = sh.querySelector('#f-rest').value.trim() || 'Restauracja';
       S.settings.signature = sh.querySelector('#f-sig').value.trim();
