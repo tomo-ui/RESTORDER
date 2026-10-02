@@ -194,11 +194,11 @@ button { touch-action: manipulation; }
 .sp-chk { fill: none; stroke: #d9531e; stroke-width: 18; stroke-linecap: round; stroke-linejoin: round;
   stroke-dasharray: 80; stroke-dashoffset: 80; animation: spDraw .45s ease-out forwards; }
 .sp-ln { fill: #cdb9aa; transform-box: fill-box; transform-origin: left center; transform: scaleX(.1); animation: spGrow .5s ease-out forwards; }
-.s1 { animation-delay: .5s; } .s2 { animation-delay: .85s; } .s3 { animation-delay: 1.2s; }
+.s1 { animation-delay: 0s; } .s2 { animation-delay: .3s; } .s3 { animation-delay: .6s; }
 @keyframes spDraw { to { stroke-dashoffset: 0; } }
 @keyframes spGrow { to { transform: scaleX(1); } }
 @keyframes spPop { from { transform: scale(.7) translateY(20px); opacity: 0; } }
-#splash .wordmark { opacity: 0; animation: spFade .5s .9s ease-out forwards; }
+#splash .wordmark { opacity: 0; animation: spFade .45s .35s ease-out forwards; }
 @keyframes spFade { to { opacity: 1; } }
 
 /* ===== poprawki: dolny pasek, ikony, splash, arkusze ===== */
@@ -249,3 +249,6 @@ body { height: auto; min-height: calc(100dvh + 2px); background: var(--bg); }
 body { background: #d9531e; }
 html.app-ready body { background: var(--bg); }
 #splash { top: 0; bottom: auto; height: 100vh; height: 100lvh; padding: 0; }
+
+/* dolny pasek: przycisk tuż nad wskaźnikiem domowym */
+.screen .bar { padding: 10px 14px max(10px, calc(var(--sab) - 14px)); }
