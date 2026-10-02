@@ -124,3 +124,42 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 #splash img { width: 132px; height: 132px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
 #splash.hide { opacity: 0; pointer-events: none; }
 html, body, button { touch-action: manipulation; }
+
+/* loga wypełniają kafelek (bez białej ramki) */
+.logo { border: 0; }
+.logo img { padding: 0; object-fit: cover; }
+.logo.sm img { padding: 0; }
+
+/* arkusze: bez przesuwania na boki, wąskie pole daty */
+html.sheet-open, html.sheet-open body { overflow: hidden; }
+.backdrop { touch-action: pan-y; overscroll-behavior: contain; }
+.sheet { overflow-x: hidden; overscroll-behavior: contain; touch-action: pan-y; }
+.sheet input, .sheet select, .sheet textarea { max-width: 100%; min-width: 0; }
+input[type="date"] { -webkit-appearance: none; appearance: none; display: block; width: 100%; min-width: 0; max-width: 100%;
+  height: 48px; line-height: 1.2; text-align: left; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
+
+/* zębatka */
+.gear { display: block; transition: transform .35s; }
+.icon-btn:active .gear { transform: rotate(90deg); }
+
+/* ＋ u góry listy */
+.add-top { width: 44px; height: 44px; flex: none; border-radius: 14px; background: var(--accent); color: #fff; font-size: 26px; font-weight: 600;
+  display: grid; place-items: center; box-shadow: 0 4px 12px rgba(217,83,30,.3); }
+.search input { min-width: 0; }
+
+/* przeciąganie pozycji */
+.grip { width: 30px; align-self: stretch; display: grid; place-items: center; color: var(--muted); font-size: 18px; letter-spacing: -3px;
+  touch-action: none; cursor: grab; margin-left: -8px; user-select: none; }
+.row.ghost { opacity: .3; }
+.row.drop-before { box-shadow: inset 0 3px 0 var(--accent); }
+.row.drop-after { box-shadow: inset 0 -3px 0 var(--accent); }
+.drag-clone { position: fixed; z-index: 90; pointer-events: none; background: var(--card); border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35); transform: scale(1.02); opacity: .97; display: flex; align-items: center; gap: 8px; padding: 9px 10px 9px 14px; }
+
+/* przejścia między ekranami */
+.go-fwd { animation: goFwd .28s cubic-bezier(.2,.8,.2,1); }
+.go-back { animation: goBack .28s cubic-bezier(.2,.8,.2,1); }
+@keyframes goFwd { from { opacity: 0; transform: translateX(36px); } }
+@keyframes goBack { from { opacity: 0; transform: translateX(-36px); } }
+@media (prefers-reduced-motion: reduce) { .go-fwd, .go-back { animation: none; } }

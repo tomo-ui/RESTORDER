@@ -6,18 +6,33 @@ const COLORS = ['#d9531e', '#2e7d4f', '#3b6fb6', '#8e44ad', '#c0392b', '#b7791f'
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const GEAR = '<svg class="gear" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /* ---------- dane ---------- */
 function defaultUnit(cat) {
   return /mięs|wędl|warzyw|owoc|pieczark|mąk/i.test(cat) ? 'kg' : 'szt';
 }
+const cap = t => t.charAt(0).toUpperCase() + t.slice(1);
+const SPLIT_SPECIAL = {
+  'Jajka L / pod carbonarę': ['Jajka L', 'Jajka pod carbonarę'],
+  'Pomidorki datterino – żółte / czerwone': ['Pomidorki datterino – żółte', 'Pomidorki datterino – czerwone'],
+  'Sól morska, sól drobna, pieprz mielony, pieprz w kulkach': ['Sól morska', 'Sól drobna', 'Pieprz mielony', 'Pieprz w kulkach'],
+  'Rzeczy wkładka (salsa truflowa, ryż)': ['Salsa truflowa (wkładka)', 'Ryż (wkładka)'],
+  'Łosoś / perliczka / policzek': ['Łosoś', 'Perliczka', 'Policzek']
+};
+// „A / B” = dwa osobne produkty
+function splitName(name) {
+  if (SPLIT_SPECIAL[name]) return SPLIT_SPECIAL[name];
+  return name.split(/\s\/\s/).map(x => cap(x.trim())).filter(Boolean);
+}
 function seedState() {
   return {
+    ver: 2,
     settings: { restaurant: 'Przypalona', signature: 'Dziękuję!', plain: false },
     suppliers: window.SEED.map((s, i) => ({
       id: uid(), name: s.name, phone: '', logo: s.logo || '', color: COLORS[i % COLORS.length], lastSent: 0,
-      products: s.products.map(([cat, name]) => ({ id: uid(), cat, name, unit: defaultUnit(cat), qty: 0, note: '' }))
+      products: s.products.flatMap(([cat, name]) => splitName(name).map(n => ({ id: uid(), cat, name: n, unit: defaultUnit(cat), qty: 0, note: '' })))
     }))
   };
 }
@@ -32,6 +47,16 @@ function load() {
           const d = window.SEED.find(z => z.name.toLowerCase() === x.name.toLowerCase());
           if (d && d.logo && (!x.logo || x.logo.startsWith('icons/logos/'))) x.logo = d.logo;
         });
+        if (!s.ver || s.ver < 2) { // jednorazowo: rozdziel pozycje „A / B”
+          s.suppliers.forEach(x => {
+            x.products = x.products.flatMap(p => {
+              const parts = splitName(p.name);
+              if (parts.length < 2) return [p];
+              return parts.map((n, i) => ({ ...p, id: i ? uid() : p.id, name: n, qty: i ? 0 : p.qty, note: i ? '' : p.note }));
+            });
+          });
+          s.ver = 2;
+        }
         return s;
       }
     }
@@ -39,6 +64,7 @@ function load() {
   return seedState();
 }
 let S = load();
+try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { /* brak miejsca */ }
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { toast('Nie można zapisać danych!'); } }
 const sup = id => S.suppliers.find(s => s.id === id);
 const ordered = s => s.products.filter(p => p.qty > 0);
@@ -64,9 +90,14 @@ function avatar(id, cls) {
 window.avatar = avatar;
 
 /* ---------- widoki ---------- */
-function render() {
+function render(dir) {
   document.title = ui.view === 'home' ? 'RESTORDER' : sup(ui.sid).name;
   if (ui.view === 'home') renderHome(); else renderSupplier();
+  if (dir) { // animacja przejścia między ekranami
+    const app = $('#app');
+    app.classList.remove('go-fwd', 'go-back'); void app.offsetWidth;
+    app.classList.add(dir === 'fwd' ? 'go-fwd' : 'go-back');
+  }
 }
 
 function renderHome() {
@@ -83,7 +114,7 @@ function renderHome() {
   $('#app').innerHTML = `
     <div class="topbar"><img class="brand" src="icons/logo.svg" alt="">
       <h1 class="wm">RESTORDER<small>${esc(S.settings.restaurant)}</small></h1>
-      <button class="icon-btn" data-act="settings" aria-label="Ustawienia">⚙</button></div>
+      <button class="icon-btn" data-act="settings" aria-label="Ustawienia">${GEAR}</button></div>
     <div class="grid">${cards}
       <div class="sup add" data-act="addsup"><div class="plus">＋</div>Dodaj dostawcę</div></div>`;
 }
@@ -101,6 +132,7 @@ function renderSupplier() {
     <div class="search">
       <input id="q" type="search" placeholder="Szukaj produktu…" value="${esc(ui.q)}" autocomplete="off">
       <button class="chip ${ui.only ? 'on' : ''}" data-act="only">Zamówione</button>
+      <button class="add-top" data-act="addprod" aria-label="Dodaj produkt">＋</button>
     </div>
     <div id="list"></div>
     <div class="bar" id="bar"></div>`;
@@ -122,7 +154,8 @@ function rowHtml(p) {
         <button class="q ${on ? '' : 'zero'}" data-act="qty" data-pid="${p.id}"><span class="v">${on ? fmt(p.qty) : '0'}</span><span class="u">${esc(p.unit)}</span></button>
         <button class="b plus" data-act="inc" data-pid="${p.id}" aria-label="Więcej">+</button>
       </div>`;
-  return `<div class="row ${on && !ui.edit ? 'on' : ''}" data-pid="${p.id}">
+  const grip = ui.edit && !ui.q.trim() && !ui.only ? `<div class="grip" data-pid="${p.id}" aria-label="Przeciągnij">⋮⋮</div>` : '';
+  return `<div class="row ${on && !ui.edit ? 'on' : ''}" data-pid="${p.id}">${grip}
     <div class="pn"><div class="t">${esc(p.name)}</div>${p.note ? `<div class="n">${esc(p.note)}</div>` : ''}</div>${right}</div>`;
 }
 
@@ -141,7 +174,6 @@ function renderList() {
       <div class="rows">${g.items.map(rowHtml).join('')}</div>`;
   }).join('');
   if (!prods.length) html = `<div class="empty">${ui.only ? 'Nic jeszcze nie zamówiono.' : 'Brak produktów.'}</div>`;
-  if (ui.edit) html += `<button class="addprod" data-act="addprod">＋ Dodaj produkt</button>`;
   $('#list').innerHTML = html;
 }
 
@@ -173,9 +205,10 @@ function openSheet(html, mount) {
   b.innerHTML = `<div class="sheet" role="dialog">${html}</div>`;
   b.addEventListener('click', e => { if (e.target === b) closeSheet(); });
   $('#sheet-root').appendChild(b);
+  document.documentElement.classList.add('sheet-open');
   if (mount) mount(b.firstElementChild);
 }
-function closeSheet() { $('#sheet-root').innerHTML = ''; }
+function closeSheet() { $('#sheet-root').innerHTML = ''; document.documentElement.classList.remove('sheet-open'); }
 const sheetHead = t => `<h2>${t}<button class="x" data-act="close" aria-label="Zamknij">✕</button></h2>`;
 
 function qtySheet(pid) {
@@ -402,6 +435,56 @@ function settingsSheet() {
   });
 }
 
+/* ---------- przeciąganie pozycji (tryb edycji) ---------- */
+let drag = null;
+document.addEventListener('pointerdown', e => {
+  const g = e.target.closest('.grip'); if (!g || drag) return;
+  e.preventDefault();
+  const row = g.closest('.row'), r = row.getBoundingClientRect();
+  const clone = row.cloneNode(true);
+  clone.classList.add('drag-clone');
+  Object.assign(clone.style, { left: r.left + 'px', top: r.top + 'px', width: r.width + 'px' });
+  document.body.appendChild(clone);
+  row.classList.add('ghost');
+  try { g.setPointerCapture(e.pointerId); } catch (err) { /* pointer nieaktywny */ }
+  drag = { pid: g.dataset.pid, row, clone, off: e.clientY - r.top, y: e.clientY, x: e.clientX, target: null, after: false, id: e.pointerId };
+  const tick = () => {
+    if (!drag) return;
+    if (drag.y < 120) scrollBy(0, -10); else if (drag.y > innerHeight - 140) scrollBy(0, 10);
+    markDrop();
+    drag.raf = requestAnimationFrame(tick);
+  };
+  drag.raf = requestAnimationFrame(tick);
+});
+function markDrop() {
+  document.querySelectorAll('.drop-before,.drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+  drag.clone.style.top = (drag.y - drag.off) + 'px';
+  const el = document.elementFromPoint(drag.x, drag.y);
+  const tr = el && el.closest('.row');
+  if (!tr || tr === drag.row) { drag.target = null; return; }
+  const b = tr.getBoundingClientRect();
+  drag.target = tr.dataset.pid; drag.after = drag.y > b.top + b.height / 2;
+  tr.classList.add(drag.after ? 'drop-after' : 'drop-before');
+}
+document.addEventListener('pointermove', e => { if (drag && e.pointerId === drag.id) { drag.x = e.clientX; drag.y = e.clientY; markDrop(); } });
+function endDrag(apply) {
+  if (!drag) return;
+  cancelAnimationFrame(drag.raf);
+  const d = drag; drag = null;
+  d.clone.remove();
+  document.querySelectorAll('.drop-before,.drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+  if (apply && d.target) {
+    const s = sup(ui.sid), p = s.products.find(x => x.id === d.pid), t = s.products.find(x => x.id === d.target);
+    s.products = s.products.filter(x => x !== p);
+    p.cat = t.cat;
+    s.products.splice(s.products.indexOf(t) + (d.after ? 1 : 0), 0, p);
+    save();
+  }
+  renderList();
+}
+document.addEventListener('pointerup', e => { if (drag && e.pointerId === drag.id) { drag.x = e.clientX; drag.y = e.clientY; markDrop(); endDrag(true); } });
+document.addEventListener('pointercancel', () => endDrag(false));
+
 /* ---------- zdarzenia ---------- */
 function bump(pid, dir) {
   const p = sup(ui.sid).products.find(x => x.id === pid), st = stepOf(p.unit);
@@ -414,8 +497,8 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act;
   if (a === 'sms') { e.stopPropagation(); return smsSheet(el.dataset.id); }
-  if (a === 'open') { ui = { view: 'sup', sid: el.dataset.id, only: false, edit: false, q: '' }; render(); return scrollTo(0, 0); }
-  if (a === 'home') { ui.view = 'home'; render(); return; }
+  if (a === 'open') { ui = { view: 'sup', sid: el.dataset.id, only: false, edit: false, q: '' }; scrollTo(0, 0); return render('fwd'); }
+  if (a === 'home') { ui.view = 'home'; scrollTo(0, 0); return render('back'); }
   if (a === 'close') return closeSheet();
   if (a === 'inc') return bump(el.dataset.pid, 1);
   if (a === 'dec') return bump(el.dataset.pid, -1);
