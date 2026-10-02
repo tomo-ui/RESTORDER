@@ -7,6 +7,11 @@ const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const GEAR = '<svg class="gear" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+const ico = (d, w = 2.4, size = 24) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const I_BACK = ico('<path d="M15.5 4.5 8 12l7.5 7.5"/>', 2.8, 26);
+const I_EDIT = ico('<path d="M17 3.2a2.8 2.8 0 0 1 4 4L7.6 20.6 2.5 21.9l1.3-5.1L17 3.2z"/>', 2.1, 21);
+const I_MORE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="19" cy="12" r="1.9"/></svg>';
+const I_X = ico('<path d="M6 6l12 12M18 6 6 18"/>', 2.4, 18);
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 /* ---------- dane ---------- */
@@ -135,11 +140,11 @@ function renderSupplier(el) {
   const s = sup(ui.sid);
   el.innerHTML = `
     <div class="topbar">
-      <button class="icon-btn" data-act="home" aria-label="Wróć">‹</button>
+      <button class="icon-btn" data-act="home" aria-label="Wróć">${I_BACK}</button>
       ${logoHtml(s, 'sm')}
       <h1>${esc(s.name)}</h1>
-      <button class="icon-btn ${ui.edit ? 'on' : ''}" data-act="toggleedit" aria-label="Edytuj listę">✎</button>
-      <button class="icon-btn" data-act="editsup" aria-label="Dostawca">⋯</button>
+      <button class="icon-btn ${ui.edit ? 'on' : ''}" data-act="toggleedit" aria-label="Edytuj listę">${I_EDIT}</button>
+      <button class="icon-btn" data-act="editsup" aria-label="Dostawca">${I_MORE}</button>
     </div>
     <div class="search">
       <input id="q" type="search" placeholder="Szukaj produktu…" value="${esc(ui.q)}" autocomplete="off">
@@ -160,7 +165,7 @@ function visibleProducts(s) {
 function rowHtml(p) {
   const on = p.qty > 0;
   const right = ui.edit
-    ? `<button class="edit-btn" data-act="editprod" data-pid="${p.id}" aria-label="Edytuj">✎</button>`
+    ? `<button class="edit-btn" data-act="editprod" data-pid="${p.id}" aria-label="Edytuj">${I_EDIT}</button>`
     : `<div class="step">
         <button class="b" data-act="dec" data-pid="${p.id}" ${on ? '' : 'disabled'} aria-label="Mniej">−</button>
         <button class="q ${on ? '' : 'zero'}" data-act="qty" data-pid="${p.id}"><span class="v">${on ? fmt(p.qty) : '0'}</span><span class="u">${esc(p.unit)}</span></button>
@@ -211,17 +216,71 @@ function patchRow(pid) {
 
 /* ---------- arkusze ---------- */
 function openSheet(html, mount) {
-  closeSheet();
+  closeSheet(true);
   const b = document.createElement('div');
   b.className = 'backdrop';
-  b.innerHTML = `<div class="sheet" role="dialog">${html}</div>`;
+  b.innerHTML = `<div class="sheet" role="dialog"><div class="grab"></div>${html}</div>`;
   b.addEventListener('click', e => { if (e.target === b) closeSheet(); });
   $('#sheet-root').appendChild(b);
   document.documentElement.classList.add('sheet-open');
+  attachSwipe(b);
   if (mount) mount(b.firstElementChild);
 }
-function closeSheet() { $('#sheet-root').innerHTML = ''; document.documentElement.classList.remove('sheet-open'); }
-const sheetHead = t => `<h2>${t}<button class="x" data-act="close" aria-label="Zamknij">✕</button></h2>`;
+function closeSheet(instant) {
+  const root = $('#sheet-root'), b = root.firstElementChild;
+  document.documentElement.classList.remove('sheet-open');
+  if (!b) return;
+  if (instant === true) { root.innerHTML = ''; return; }
+  if (b.classList.contains('closing')) return;
+  b.classList.add('closing');
+  setTimeout(() => b.remove(), 240);
+}
+// przesunięcie palcem w dół zamyka panel (jak w iOS)
+function attachSwipe(b) {
+  const sh = b.firstElementChild;
+  let st = null;
+  b.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || e.target.closest('textarea') || b.classList.contains('closing')) return;
+    const p = e.touches[0];
+    st = { x: p.clientX, y: p.clientY, t: Date.now(), on: false, dy: 0, ok: sh.scrollTop <= 0 || !!e.target.closest('.grab,h2') };
+  }, { passive: true });
+  b.addEventListener('touchmove', e => {
+    if (!st) return;
+    const p = e.touches[0], dy = p.clientY - st.y, dx = p.clientX - st.x;
+    if (!st.on) {
+      if (st.ok && dy > 8 && dy > Math.abs(dx) * 1.2) { st.on = true; sh.style.transition = 'none'; sh.style.animation = 'none'; }
+      else { if (Math.abs(dx) > 12 || dy < -6) st = null; return; }
+    }
+    if (e.cancelable) e.preventDefault();
+    st.dy = Math.max(0, dy);
+    sh.style.transform = `translateY(${st.dy}px)`;
+    b.style.background = `rgba(20,10,5,${0.5 * Math.max(0, 1 - st.dy / 450)})`;
+  }, { passive: false });
+  const end = cancel => {
+    if (!st) return;
+    const s0 = st; st = null;
+    if (!s0.on) return;
+    const v = s0.dy / Math.max(1, Date.now() - s0.t);
+    if (!cancel && (s0.dy > sh.offsetHeight * 0.3 || (v > 0.6 && s0.dy > 40))) {
+      document.documentElement.classList.remove('sheet-open');
+      b.classList.add('closing');
+      b.style.animation = 'none';
+      sh.style.transition = 'transform .24s cubic-bezier(.4,0,1,1)';
+      sh.style.transform = 'translateY(100%)';
+      b.style.transition = 'background .24s';
+      b.style.background = 'rgba(20,10,5,0)';
+      setTimeout(() => b.remove(), 250);
+    } else {
+      sh.style.transition = 'transform .3s cubic-bezier(.2,.9,.3,1.2)';
+      sh.style.transform = '';
+      b.style.transition = 'background .3s';
+      b.style.background = '';
+    }
+  };
+  b.addEventListener('touchend', () => end(false));
+  b.addEventListener('touchcancel', () => end(true));
+}
+const sheetHead = t => `<h2>${t}<button class="x" data-act="close" aria-label="Zamknij">${I_X}</button></h2>`;
 
 function qtySheet(pid) {
   const s = sup(ui.sid), p = s.products.find(x => x.id === pid);
@@ -503,6 +562,20 @@ function endDrag(apply) {
 }
 document.addEventListener('pointerup', e => { if (drag && e.pointerId === drag.id) { drag.x = e.clientX; drag.y = e.clientY; markDrop(); endDrag(true); } });
 document.addEventListener('pointercancel', () => endDrag(false));
+
+/* ---------- gest „wstecz” od lewej krawędzi ---------- */
+let edge = null;
+document.addEventListener('touchstart', e => {
+  const p = e.touches[0];
+  edge = ui.view === 'sup' && e.touches.length === 1 && p.clientX < 26 && !$('#sheet-root').firstElementChild && !drag
+    ? { x: p.clientX, y: p.clientY } : null;
+}, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (!edge) return;
+  const p = e.touches[0], dx = p.clientX - edge.x, dy = Math.abs(p.clientY - edge.y);
+  if (dx > 70 && dx > dy * 1.5) { edge = null; ui.view = 'home'; render('back'); }
+  else if (dy > dx + 20) edge = null;
+}, { passive: true });
 
 /* ---------- zdarzenia ---------- */
 function bump(pid, dir) {
