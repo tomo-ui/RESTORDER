@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pl">
+<html lang="pl" style="background:#d9531e">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -25,7 +25,6 @@
 <link rel="apple-touch-startup-image" href="icons/splash/1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 <link rel="apple-touch-startup-image" href="icons/splash/1206x2622.png" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
 <link rel="apple-touch-startup-image" href="icons/splash/1320x2868.png" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)">
-<link rel="stylesheet" href="style.css">
 <style>
 /* krytyczny CSS splasha – inline, żeby pierwszy rysunek (zimny start, wolna sieć) nie błysnął niestylowanym SVG ani białym tłem */
 html, body { margin: 0; background: #d9531e; }
@@ -44,6 +43,8 @@ html, body { margin: 0; background: #d9531e; }
 @keyframes spGrow { to { transform: scaleX(1); } }
 @keyframes spFade { to { opacity: 1; } }
 </style>
+<link rel="stylesheet" href="style.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="style.css"></noscript>
 
 <script>
 /* pomiar viewportu przy starcie (do diagnostyki w Ustawieniach) */
