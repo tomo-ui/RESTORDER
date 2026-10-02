@@ -616,7 +616,10 @@ document.addEventListener('click', e => {
 render();
 // bez zoomu: pinch (iOS); podwójne stuknięcie blokuje touch-action: manipulation
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
-document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
+// strona się nie przesuwa; tylko listy (.scroll) i panele (.sheet) mogą się przewijać
+document.addEventListener('touchmove', e => {
+  if (e.touches.length > 1 || (!e.target.closest('.scroll, .sheet, textarea') && !drag)) e.preventDefault();
+}, { passive: false });
 setTimeout(() => $('#splash').classList.add('hide'), 2400);
 setTimeout(() => $('#splash').remove(), 2900);
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

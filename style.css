@@ -223,3 +223,10 @@ html { background: var(--bg); }
 #splash svg { width: 100%; height: 100%; display: block; filter: none; }
 .sp-logo { width: 132px; height: 132px; border-radius: 29px; overflow: hidden; background: #d9531e; box-shadow: 0 14px 32px rgba(0,0,0,.28); }
 #splash .wordmark { padding-left: .14em; }
+
+/* ===== bez position:fixed/overflow:hidden na html i body (powodowało czarny pasek na dole w iOS) ===== */
+html, body { position: static; inset: auto; width: auto; overflow: visible; margin: 0; }
+html { height: auto; }
+html.sheet-open, html.sheet-open body { overflow: visible; }
+body { position: relative; height: 100vh; height: 100dvh; min-height: 0; padding: 0; touch-action: pan-y; }
+#app { position: absolute; inset: 0; overflow: hidden; }
