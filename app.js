@@ -29,7 +29,7 @@ function splitName(name) {
 function seedState() {
   return {
     ver: 2,
-    settings: { restaurant: 'Przypalona', signature: 'Dziękuję!', plain: false },
+    settings: { restaurant: 'Przypalona', signature: 'Dziękuję!' },
     suppliers: window.SEED.map((s, i) => ({
       id: uid(), name: s.name, phone: '', logo: s.logo || '', color: COLORS[i % COLORS.length], lastSent: 0,
       products: s.products.flatMap(([cat, name]) => splitName(name).map(n => ({ id: uid(), cat, name: n, unit: defaultUnit(cat), qty: 0, note: '' })))
@@ -90,17 +90,29 @@ function avatar(id, cls) {
 window.avatar = avatar;
 
 /* ---------- widoki ---------- */
+const scr = () => $('#app > .screen.cur');
 function render(dir) {
   document.title = ui.view === 'home' ? 'RESTORDER' : sup(ui.sid).name;
-  if (ui.view === 'home') renderHome(); else renderSupplier();
-  if (dir) { // animacja przejścia między ekranami
-    const app = $('#app');
-    app.classList.remove('go-fwd', 'go-back'); void app.offsetWidth;
-    app.classList.add(dir === 'fwd' ? 'go-fwd' : 'go-back');
+  const app = $('#app'), old = scr();
+  const el = document.createElement('div');
+  el.className = 'screen cur';
+  if (old) {
+    old.classList.remove('cur', 'in-fwd', 'in-back');
+    if (dir) { // stary ekran zostaje na czas animacji (bez id, nieklikalny)
+      old.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+      old.setAttribute('inert', '');
+    } else old.remove();
+  }
+  app.appendChild(el);
+  if (ui.view === 'home') renderHome(el); else renderSupplier(el);
+  if (dir && old) {
+    old.classList.add(dir === 'fwd' ? 'out-fwd' : 'out-back');
+    el.classList.add(dir === 'fwd' ? 'in-fwd' : 'in-back');
+    setTimeout(() => old.remove(), 420);
   }
 }
 
-function renderHome() {
+function renderHome(el) {
   const cards = S.suppliers.map(s => {
     const n = ordered(s).length;
     const sent = s.lastSent ? ` · wysłano ${new Date(s.lastSent).toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' })}` : '';
@@ -111,17 +123,17 @@ function renderHome() {
       <button class="sms-btn" data-act="sms" data-id="${s.id}" ${n ? '' : 'disabled'}>✉ SMS${n ? ` (${n})` : ''}</button>
     </div>`;
   }).join('');
-  $('#app').innerHTML = `
+  el.innerHTML = `
     <div class="topbar"><img class="brand" src="icons/logo.svg" alt="">
       <h1 class="wm">RESTORDER<small>${esc(S.settings.restaurant)}</small></h1>
       <button class="icon-btn" data-act="settings" aria-label="Ustawienia">${GEAR}</button></div>
-    <div class="grid">${cards}
-      <div class="sup add" data-act="addsup"><div class="plus">＋</div>Dodaj dostawcę</div></div>`;
+    <div class="scroll"><div class="grid">${cards}
+      <div class="sup add" data-act="addsup"><div class="plus">＋</div>Dodaj dostawcę</div></div></div>`;
 }
 
-function renderSupplier() {
+function renderSupplier(el) {
   const s = sup(ui.sid);
-  $('#app').innerHTML = `
+  el.innerHTML = `
     <div class="topbar">
       <button class="icon-btn" data-act="home" aria-label="Wróć">‹</button>
       ${logoHtml(s, 'sm')}
@@ -134,9 +146,9 @@ function renderSupplier() {
       <button class="chip ${ui.only ? 'on' : ''}" data-act="only">Zamówione</button>
       <button class="add-top" data-act="addprod" aria-label="Dodaj produkt">＋</button>
     </div>
-    <div id="list"></div>
+    <div class="scroll"><div id="list"></div></div>
     <div class="bar" id="bar"></div>`;
-  $('#q').addEventListener('input', e => { ui.q = e.target.value; renderList(); });
+  el.querySelector('#q').addEventListener('input', e => { ui.q = e.target.value; renderList(); });
   renderList(); renderBar();
 }
 
@@ -184,12 +196,12 @@ function renderBar() {
 
 function patchRow(pid) {
   const s = sup(ui.sid), p = s.products.find(x => x.id === pid);
-  const el = document.querySelector(`.row[data-pid="${pid}"]`);
+  const el = scr().querySelector(`.row[data-pid="${pid}"]`);
   if (!el) return;
   if (ui.only && p.qty <= 0) { renderList(); } else {
     el.outerHTML = rowHtml(p);
     // licznik w nagłówku kategorii
-    const rows = document.querySelector(`.row[data-pid="${pid}"]`).closest('.rows');
+    const rows = scr().querySelector(`.row[data-pid="${pid}"]`).closest('.rows');
     const cnt = rows.previousElementSibling.querySelector('.cnt');
     const n = s.products.filter(x => x.cat === p.cat && x.qty > 0).length;
     cnt.textContent = n ? n + ' zam.' : '';
@@ -327,33 +339,22 @@ function supSheet(id) {
 }
 
 /* ---------- SMS ---------- */
-const PL = { ą: 'a', ć: 'c', ę: 'e', ł: 'l', ń: 'n', ó: 'o', ś: 's', ź: 'z', ż: 'z', Ą: 'A', Ć: 'C', Ę: 'E', Ł: 'L', Ń: 'N', Ó: 'O', Ś: 'S', Ź: 'Z', Ż: 'Z' };
-const stripPL = t => t.replace(/[ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]/g, c => PL[c]).replace(/[–—]/g, '-').replace(/[’‘]/g, "'").replace(/[„”“]/g, '"');
 const tomorrow = () => { const d = new Date(Date.now() + 864e5); return d.toISOString().slice(0, 10); };
 
 function buildSms(s, o) {
   let head = `Dzień dobry, zamówienie ${S.settings.restaurant}`;
   if (o.date) { const [y, m, d] = o.date.split('-'); head += ` na ${d}.${m}`; }
   const lines = ordered(s).map(p => `- ${p.name} - ${fmt(p.qty)} ${p.unit}${p.note ? ` (${p.note})` : ''}`);
-  let t = `${head}:\n${lines.join('\n')}\n${S.settings.signature}`.trim();
-  return o.plain ? stripPL(t) : t;
-}
-function smsInfo(t) {
-  const gsm = /^[\x20-\x7E\n\r£¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ¤¡ÄÖÑÜ§¿äöñüà]*$/.test(t);
-  const single = gsm ? 160 : 70, multi = gsm ? 153 : 67, n = [...t].length;
-  const parts = n <= single ? 1 : Math.ceil(n / multi);
-  return `${n} znaków · ok. ${parts} SMS${gsm ? '' : ' (polskie znaki → krótsze SMS-y)'}`;
+  return `${head}:\n${lines.join('\n')}\n${S.settings.signature}`.trim();
 }
 
 function smsSheet(id) {
   const s = sup(id);
-  const o = { date: tomorrow(), plain: !!S.settings.plain };
+  const o = { date: tomorrow() };
   openSheet(`${sheetHead(`SMS do: ${esc(s.name)}`)}
     <label>Telefon dostawcy</label><input id="f-phone" type="tel" inputmode="tel" value="${esc(s.phone)}" placeholder="+48 600 000 000" autocomplete="off">
     <label>Dostawa na dzień (opcjonalnie)</label><input id="f-date" type="date" value="${o.date}">
     <label>Treść wiadomości (możesz poprawić)</label><textarea id="f-text"></textarea>
-    <div class="hint" id="f-info"></div>
-    <label class="check"><input type="checkbox" id="f-plain" ${o.plain ? 'checked' : ''}>Bez polskich znaków (tańszy / dłuższy SMS)</label>
     <div class="btns">
       <button class="btn pri" id="b-sms">✉ Otwórz w SMS</button>
       <button class="btn" id="b-copy">Kopiuj</button>
@@ -363,11 +364,8 @@ function smsSheet(id) {
     <div class="btns"><button class="btn danger" id="b-clear">Wyczyść ilości tego dostawcy</button></div>`,
   sh => {
     const ta = sh.querySelector('#f-text');
-    const regen = () => { o.date = sh.querySelector('#f-date').value; o.plain = sh.querySelector('#f-plain').checked; ta.value = buildSms(s, o); info(); };
-    const info = () => { sh.querySelector('#f-info').textContent = smsInfo(ta.value); };
+    const regen = () => { o.date = sh.querySelector('#f-date').value; ta.value = buildSms(s, o); };
     sh.querySelector('#f-date').oninput = regen;
-    sh.querySelector('#f-plain').onchange = () => { S.settings.plain = sh.querySelector('#f-plain').checked; save(); regen(); };
-    ta.oninput = info;
     regen();
     const phone = () => { const v = sh.querySelector('#f-phone').value.trim(); if (v !== s.phone) { s.phone = v; save(); } return v.replace(/[^\d+]/g, ''); };
     sh.querySelector('#b-sms').onclick = () => {
@@ -450,7 +448,8 @@ document.addEventListener('pointerdown', e => {
   drag = { pid: g.dataset.pid, row, clone, off: e.clientY - r.top, y: e.clientY, x: e.clientX, target: null, after: false, id: e.pointerId };
   const tick = () => {
     if (!drag) return;
-    if (drag.y < 120) scrollBy(0, -10); else if (drag.y > innerHeight - 140) scrollBy(0, 10);
+    const sc = scr().querySelector('.scroll'), b = sc.getBoundingClientRect();
+    if (drag.y < b.top + 70) sc.scrollTop -= 10; else if (drag.y > b.bottom - 150) sc.scrollTop += 10;
     markDrop();
     drag.raf = requestAnimationFrame(tick);
   };
@@ -471,8 +470,10 @@ function endDrag(apply) {
   if (!drag) return;
   cancelAnimationFrame(drag.raf);
   const d = drag; drag = null;
-  d.clone.remove();
   document.querySelectorAll('.drop-before,.drop-after').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+  const root = scr();
+  // pozycje przed zmianą (FLIP)
+  const before = new Map([...root.querySelectorAll('.row')].map(r => [r.dataset.pid, r.getBoundingClientRect().top]));
   if (apply && d.target) {
     const s = sup(ui.sid), p = s.products.find(x => x.id === d.pid), t = s.products.find(x => x.id === d.target);
     s.products = s.products.filter(x => x !== p);
@@ -481,6 +482,24 @@ function endDrag(apply) {
     save();
   }
   renderList();
+  const landed = root.querySelector(`.row[data-pid="${d.pid}"]`);
+  if (landed) landed.style.visibility = 'hidden';
+  const moved = [];
+  root.querySelectorAll('.row').forEach(r => {
+    if (r === landed) return;
+    const dy = (before.get(r.dataset.pid) ?? 0) - r.getBoundingClientRect().top;
+    if (dy) { r.style.transition = 'none'; r.style.transform = `translateY(${dy}px)`; moved.push(r); }
+  });
+  void root.offsetWidth;
+  moved.forEach(r => { r.style.transition = 'transform .28s cubic-bezier(.2,.8,.2,1)'; r.style.transform = ''; });
+  // klon „wpada” płynnie na swoje miejsce
+  if (landed) {
+    const b = landed.getBoundingClientRect(), c = d.clone;
+    c.style.transition = 'top .26s cubic-bezier(.2,.8,.2,1), left .26s, transform .26s, box-shadow .26s, opacity .26s';
+    c.style.top = b.top + 'px'; c.style.left = b.left + 'px';
+    c.style.transform = 'none'; c.style.boxShadow = '0 0 0 rgba(0,0,0,0)';
+    setTimeout(() => { c.remove(); landed.style.visibility = ''; moved.forEach(r => { r.style.transition = ''; }); }, 290);
+  } else d.clone.remove();
 }
 document.addEventListener('pointerup', e => { if (drag && e.pointerId === drag.id) { drag.x = e.clientX; drag.y = e.clientY; markDrop(); endDrag(true); } });
 document.addEventListener('pointercancel', () => endDrag(false));
@@ -497,8 +516,8 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act;
   if (a === 'sms') { e.stopPropagation(); return smsSheet(el.dataset.id); }
-  if (a === 'open') { ui = { view: 'sup', sid: el.dataset.id, only: false, edit: false, q: '' }; scrollTo(0, 0); return render('fwd'); }
-  if (a === 'home') { ui.view = 'home'; scrollTo(0, 0); return render('back'); }
+  if (a === 'open') { ui = { view: 'sup', sid: el.dataset.id, only: false, edit: false, q: '' }; return render('fwd'); }
+  if (a === 'home') { ui.view = 'home'; return render('back'); }
   if (a === 'close') return closeSheet();
   if (a === 'inc') return bump(el.dataset.pid, 1);
   if (a === 'dec') return bump(el.dataset.pid, -1);
@@ -516,8 +535,8 @@ render();
 // bez zoomu: pinch (iOS); podwójne stuknięcie blokuje touch-action: manipulation
 ['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault()));
 document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
-setTimeout(() => $('#splash').classList.add('hide'), 1500);
-setTimeout(() => $('#splash').remove(), 2000);
+setTimeout(() => $('#splash').classList.add('hide'), 2400);
+setTimeout(() => $('#splash').remove(), 2900);
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});

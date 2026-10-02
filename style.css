@@ -163,3 +163,40 @@ input[type="date"]::-webkit-date-and-time-value { text-align: left; min-height: 
 @keyframes goFwd { from { opacity: 0; transform: translateX(36px); } }
 @keyframes goBack { from { opacity: 0; transform: translateX(-36px); } }
 @media (prefers-reduced-motion: reduce) { .go-fwd, .go-back { animation: none; } }
+
+/* ===== stała powłoka: strona się nie przesuwa, przewijają się tylko listy ===== */
+html, body { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; touch-action: pan-y; padding: 0; }
+button { touch-action: manipulation; }
+#app { position: absolute; inset: 0; overflow: hidden; }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--bg); }
+.screen .scroll { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+.screen #list { padding-bottom: calc(var(--sab) + 96px); }
+.screen .grid { padding-bottom: calc(var(--sab) + 24px); }
+.screen .topbar { position: relative; flex: none; }
+.screen .search { flex: none; }
+.screen .bar { position: absolute; }
+
+/* przejścia „push” między ekranami */
+.in-fwd { animation: inFwd .38s cubic-bezier(.22,.9,.3,1) both; z-index: 2; box-shadow: -14px 0 32px rgba(0,0,0,.28); }
+.out-fwd { animation: outFwd .38s cubic-bezier(.22,.9,.3,1) both; z-index: 1; pointer-events: none; }
+.in-back { animation: inBack .38s cubic-bezier(.22,.9,.3,1) both; z-index: 1; }
+.out-back { animation: outBack .38s cubic-bezier(.22,.9,.3,1) both; z-index: 2; box-shadow: -14px 0 32px rgba(0,0,0,.28); pointer-events: none; }
+@keyframes inFwd { from { transform: translateX(100%); } }
+@keyframes outFwd { to { transform: translateX(-24%); filter: brightness(.7); } }
+@keyframes inBack { from { transform: translateX(-24%); filter: brightness(.7); } }
+@keyframes outBack { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .in-fwd, .out-fwd, .in-back, .out-back { animation-duration: .01s; } }
+
+/* ekran startowy z wbudowanym (inline) animowanym logo */
+#splash svg { width: 132px; height: 132px; filter: drop-shadow(0 10px 24px rgba(0,0,0,.28)); }
+.sp-board { animation: spPop .6s cubic-bezier(.2,.9,.3,1.3) both; transform-origin: 256px 256px; }
+.sp-chk { fill: none; stroke: #d9531e; stroke-width: 18; stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 80; stroke-dashoffset: 80; animation: spDraw .45s ease-out forwards; }
+.sp-ln { fill: #cdb9aa; transform-box: fill-box; transform-origin: left center; transform: scaleX(.1); animation: spGrow .5s ease-out forwards; }
+.s1 { animation-delay: .5s; } .s2 { animation-delay: .85s; } .s3 { animation-delay: 1.2s; }
+@keyframes spDraw { to { stroke-dashoffset: 0; } }
+@keyframes spGrow { to { transform: scaleX(1); } }
+@keyframes spPop { from { transform: scale(.7) translateY(20px); opacity: 0; } }
+#splash .wordmark { opacity: 0; animation: spFade .5s .9s ease-out forwards; }
+@keyframes spFade { to { opacity: 1; } }
