@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RESTORDER">
+  <style>
+    .board { animation: bob 3.6s ease-in-out infinite; transform-origin: 256px 256px; }
+    .chk { fill: none; stroke: #d9531e; stroke-width: 18; stroke-linecap: round; stroke-linejoin: round;
+           stroke-dasharray: 80; stroke-dashoffset: 80; animation: draw 3.6s ease-in-out infinite; }
+    .c2 { animation-delay: .45s; } .c3 { animation-delay: .9s; }
+    .ln { fill: #cdb9aa; transform-box: fill-box; transform-origin: left center; animation: grow 3.6s ease-in-out infinite; }
+    .l2 { animation-delay: .45s; } .l3 { animation-delay: .9s; }
+    @keyframes draw { 0%, 6% { stroke-dashoffset: 80; } 20%, 88% { stroke-dashoffset: 0; } 96%, 100% { stroke-dashoffset: 80; } }
+    @keyframes grow { 0%, 4% { transform: scaleX(.15); } 20%, 88% { transform: scaleX(1); } 96%, 100% { transform: scaleX(.15); } }
+    @keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+  </style>
+  <rect width="512" height="512" rx="112" fill="#d9531e"/>
+  <g class="board">
+    <rect x="96" y="88" width="320" height="364" rx="42" fill="#fff7f0"/>
+    <rect x="176" y="60" width="160" height="60" rx="24" fill="#7a2a0c"/>
+    <circle cx="256" cy="90" r="9" fill="#fff7f0"/>
+    <path class="chk" d="M140 206 L162 228 L200 184"/>
+    <rect class="ln" x="232" y="198" width="150" height="20" rx="10"/>
+    <path class="chk c2" d="M140 294 L162 316 L200 272"/>
+    <rect class="ln l2" x="232" y="286" width="150" height="20" rx="10"/>
+    <path class="chk c3" d="M140 382 L162 404 L200 360"/>
+    <rect class="ln l3" x="232" y="374" width="110" height="20" rx="10"/>
+  </g>
+</svg>
