@@ -243,3 +243,9 @@ body { height: auto; min-height: calc(100dvh + 2px); background: var(--bg); }
 #app { position: fixed; top: 0; left: 0; right: 0; bottom: 0; height: auto; }
 #splash { top: -120px; bottom: -120px; padding: 120px 0; box-sizing: border-box; }
 #diag { white-space: pre-line; font-variant-numeric: tabular-nums; }
+
+/* ===== iOS 26: okno startuje krótsze o wysokość paska statusu, a pas pod nim ma kolor tła body.
+   Na czas startu body ma kolor splasha (pomarańcz), więc pas jest niewidoczny; potem wraca zwykłe tło. ===== */
+body { background: #d9531e; }
+html.app-ready body { background: var(--bg); }
+#splash { top: 0; bottom: auto; height: 100vh; height: 100lvh; padding: 0; }

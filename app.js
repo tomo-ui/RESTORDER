@@ -627,7 +627,7 @@ render();
 document.addEventListener('touchmove', e => {
   if (e.touches.length > 1 || (!e.target.closest('.scroll, .sheet, textarea') && !drag)) e.preventDefault();
 }, { passive: false });
-setTimeout(() => $('#splash').classList.add('hide'), 2400);
+setTimeout(() => { $('#splash').classList.add('hide'); document.documentElement.classList.add('app-ready'); }, 2400);
 setTimeout(() => $('#splash').remove(), 2900);
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
