@@ -235,3 +235,6 @@ body { position: relative; height: 100vh; height: 100dvh; min-height: 0; padding
 html { background: var(--accent); }
 body { height: auto; min-height: calc(100dvh + 2px); background: var(--bg); }
 #app { position: absolute; top: 0; left: 0; right: 0; bottom: auto; height: 100dvh; }
+
+/* bez „wyskoku” logo – obraz startowy iOS pokazuje już logo w tym samym miejscu */
+.sp-board { animation: none; }
